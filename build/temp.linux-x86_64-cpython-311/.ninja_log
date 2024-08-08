@@ -1,0 +1,3 @@
+# ninja log v5
+0	16069	1723103434019900508	/home/kukumav/vscode_projects/pytorch_sparse_addons/build/temp.linux-x86_64-cpython-311/sparse_cdist_cuda.o	aacdfcd38c75f3b8
+0	30248	1723103448199916731	/home/kukumav/vscode_projects/pytorch_sparse_addons/build/temp.linux-x86_64-cpython-311/sparse_cdist_cuda_kernel.o	d6e5a011384fc50d
