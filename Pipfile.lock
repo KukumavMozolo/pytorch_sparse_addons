@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "47809488fceb7f8f9b6e1ed1802918b004acbfb802889eab7ef66f354646f81d"
+            "sha256": "a9f005b8cbadd98be90b91e639599caab558727b9d7221d7e960c8b6f50902f1"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -21,6 +21,9 @@
         ]
     },
     "default": {
+        "cdist": {
+            "file": "."
+        },
         "filelock": {
             "hashes": [
                 "sha256:2207938cbc1844345cb01a5a95524dae30f0ce089eba5b00378295a17e3e90cb",
@@ -392,11 +395,11 @@
         },
         "sympy": {
             "hashes": [
-                "sha256:9cebf7e04ff162015ce31c9c6c9144daa34a93bd082f54fd8f12deca4f47515f",
-                "sha256:db36cdc64bf61b9b24578b6f7bab1ecdd2452cf008f34faa33776680c26d66f8"
+                "sha256:401449d84d07be9d0c7a46a64bd54fe097667d5e7181bfe67ec777be9e01cb13",
+                "sha256:c51d75517712f1aed280d4ce58506a4a88d635d6b5dd48b39102a7ae1f3fcfe9"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==1.13.1"
+            "version": "==1.13.2"
         },
         "torch": {
             "hashes": [

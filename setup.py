@@ -10,6 +10,7 @@ setup(
         CUDAExtension('sparse_cdist', [
             'sparse_cdist_cuda.cpp',
             'sparse_cdist_cuda_kernel.cu',
+            'sparse_dist.cpp'
         ])
     ],
     cmdclass={

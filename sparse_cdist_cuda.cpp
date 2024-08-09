@@ -15,6 +15,21 @@ torch::Tensor sparse_cdist_cuda(
   int dim_b);
 
 
+std::tuple<torch::Tensor, torch::Tensor> sparse_cdist_bw_cuda(
+    torch::Tensor a_rowptr_data,
+    torch::Tensor a_col_data,
+    torch::Tensor a_value_data,
+    torch::Tensor b_rowptr_data,
+    torch::Tensor b_col_data,
+    torch::Tensor b_value_data,
+    torch::Tensor grad_out,
+    torch::Tensor distance,
+    int dim_a,
+    int dim_b,
+    int dim_c
+    );
+
+
 template <typename scalar_t> void cpy_array_cpu(const scalar_t* from, scalar_t* to, int start, int end)
 {
   int counter = 0;
@@ -132,10 +147,34 @@ torch::Tensor sparse_cdist(
       else{
         TORCH_CHECK(false, "All Tensors must be on same device!");
       }
-
-   
 }
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("cdist", &sparse_cdist, "Sparse Cdist (CUDA)");
+
+std::tuple<torch::Tensor, torch::Tensor> sparse_bw_cdist(
+    torch::Tensor a_rowptr_data,
+    torch::Tensor a_col_data,
+    torch::Tensor a_value_data,
+    torch::Tensor b_rowptr_data,
+    torch::Tensor b_col_data,
+    torch::Tensor b_value_data,
+    torch::Tensor grad_out,
+    torch::Tensor distance,
+    int dim_a,
+    int dim_b,
+    int dim_c){
+      CHECK_CONTIGUOUS(a_rowptr_data);
+      CHECK_CONTIGUOUS(a_col_data);
+      CHECK_CONTIGUOUS(a_value_data);
+      CHECK_CONTIGUOUS(b_rowptr_data);
+      CHECK_CONTIGUOUS(b_col_data);
+      CHECK_CONTIGUOUS(b_value_data);
+      //if(!IS_CUDA(a_rowptr_data) && !IS_CUDA(a_rowptr_data) && !IS_CUDA(a_rowptr_data) && !IS_CUDA(b_rowptr_data) && !IS_CUDA(b_col_data) && !IS_CUDA(b_value_data)){
+      //  return sparse_cdist_bw_cpu_switch(a_rowptr_data, a_col_data, a_value_data, b_rowptr_data, b_col_data, b_value_data,grad_out, dim_a, dim_b);
+      //}else if (IS_CUDA(a_rowptr_data) && IS_CUDA(a_rowptr_data) && IS_CUDA(a_rowptr_data) && IS_CUDA(b_rowptr_data) && IS_CUDA(b_col_data) && IS_CUDA(b_value_data)){
+        return sparse_cdist_bw_cuda(a_rowptr_data, a_col_data, a_value_data, b_rowptr_data, b_col_data, b_value_data,grad_out, distance, dim_a, dim_b, dim_c);
+      //}
+      //else{
+      //  TORCH_CHECK(false, "All Tensors must be on same device!");
+      //}
 }
+
