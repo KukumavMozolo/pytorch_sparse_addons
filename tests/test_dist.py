@@ -10,7 +10,7 @@ from torch_sparse_addons.dist import cdist
 
 class CdistTest(unittest.TestCase):
     def test_cdist(self):
-        x = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0],[1.0,.0,.0],[.0,1.0,.0]]))
+        x = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0],[1.0,.0,.0],[.0,1.0,1.0]]))
         res = cdist(x)
         target = torch.cdist(x.to_dense(),x.to_dense())
         self.assertTrue(np.array_equal(res.to_dense().numpy(), target.to_dense().numpy()))
@@ -21,7 +21,7 @@ class CdistTest(unittest.TestCase):
         self.assertTrue(np.array_equal(res2.to_dense().numpy(), target2.to_dense().numpy()))
 
     def test_cdist_grad(self):
-        x = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0],[1.0,.0,.0],[.0,1.0,.0]]))
+        x = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0],[1.0,.0,.0],[.0,1.0,.0]],requires_grad=True))
         dist_x = cdist(x)
         dist_y = torch.tensor([[0.0,1.0,1.0],[1.0,0.0,1.0],[1.0,1.0,0.0]])
         loss = torch.nn.MSELoss()

@@ -60,12 +60,14 @@ public: static variable_list forward(
     auto a_rowptr_data = saved[0], a_col_data = saved[1], a_value_data = saved[2], b_rowptr_data = saved[3],
          b_col_data = saved[4], b_value_data = saved[5], distance = saved[5];
 
+    auto grad_value_a = Variable();
+    auto grad_value_b = Variable();
     auto grad_value_data = sparse_bw_cdist(a_rowptr_data, a_col_data, a_value_data, b_rowptr_data, b_col_data, b_value_data, grad_out, distance, dim_a, dim_b, dim_c);
-    auto a_grad_value_data = grad_value_data[0];
-    auto b_grad_value_data = grad_value_data[1];
+    grad_value_a = grad_value_data[0];
+    grad_value_b = grad_value_data[1];
 
-    return {Variable(), Variable(), a_grad_value_data,
-            Variable(), Variable(), b_grad_value_data};
+    return {Variable(), Variable(), grad_value_a,
+            Variable(), Variable(), grad_value_b, Variable(), Variable(), Variable()};
   }
 };
 
