@@ -1,4 +1,3 @@
-
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
@@ -9,8 +8,7 @@ setup(
     ext_modules=[
         CUDAExtension('sparse_cdist', [
             'sparse_cdist_cuda.cpp',
-            'sparse_cdist_cuda_kernel.cu',
-            'sparse_dist.cpp'
+            'sparse_cdist_cuda_kernel.cu'
         ])
     ],
     cmdclass={
