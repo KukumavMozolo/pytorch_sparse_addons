@@ -2,12 +2,12 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-
+#include <stdio.h>
 
 #include "math.h"
 
 
-template <typename scalar_t> __device__ void cpy_array(scalar_t* from, scalar_t* to, int start, int end)
+template <typename scalar_t> __device__ void cpy_array(const scalar_t* from, scalar_t* to, int start, int end)
 {
   int counter = 0;
   for (int i=start; i<end; i++){
@@ -23,10 +23,10 @@ template <typename scalar_t>
 __global__ void sparse_cdist_cuda_kernel(
     const int64_t* __restrict__ a_rowptr,
     const int64_t* __restrict__ a_col,
-    scalar_t* __restrict__ a_value,
-    int64_t* __restrict__ b_rowptr,
-    int64_t* __restrict__ b_col,
-    scalar_t* __restrict__ b_value,
+    const scalar_t* __restrict__ a_value,
+    const int64_t* __restrict__ b_rowptr,
+    const int64_t* __restrict__ b_col,
+    const scalar_t* __restrict__ b_value,
     scalar_t* __restrict__ output,
     int dim_a,
     int dim_b) {
@@ -34,114 +34,78 @@ __global__ void sparse_cdist_cuda_kernel(
   const int j = blockIdx.y * blockDim.y + threadIdx.y;
 
   if (i < dim_a && j < dim_b){
+    // printf("dima_a: %d,i: %d,dim_b: %d,j: %d \n", dim_a, i, dim_b, j);
     const int start_i = a_rowptr[i];
     const int end_i = a_rowptr[i+1];
-    const int start_j = b_rowptr[j];
+    int start_j = b_rowptr[j];
     const int end_j = b_rowptr[j+1];
 
     scalar_t distance = 0.0;
 
-    scalar_t *b_value_remainder = new scalar_t[end_j-start_j];
-    cpy_array<scalar_t>(b_value, b_value_remainder, start_j, end_j);
-
-    for (int ii = start_i; ii < end_i; ii ++){
-      int col_index_i = a_col[ii];
-      auto value_i = a_value[ii];
-      bool not_matched_i = true;
-      int counter = 0;
-      for (int jj = start_j; jj < end_j; jj ++){
-        int col_index_j = b_col[jj];
-        auto value_j = b_value[jj];
-
-        if (col_index_i == col_index_j){
-          auto t = (value_i - value_j);
-          t *=t;
-          distance += t;
-          not_matched_i = false;
-          b_value_remainder[counter] = 0.0;
-        }
-        counter++;
-      }
-      if(not_matched_i){
+    if(start_j == end_j){
+      for (int ii = start_i; ii < end_i; ii ++){
+        auto value_i = a_value[ii];
         distance +=(value_i*value_i);
       }
     }
-    for (int jj = 0; jj < end_j- start_j; jj ++){
-      distance +=(b_value_remainder[jj]*b_value_remainder[jj]);
-    }
-    distance = sqrt(distance);
-    output[i*dim_b + j] = distance;
-
-  }
-}
-
-
-template <typename scalar_t>
-__global__ void sparse_cdist_bw_cuda_kernel(
-    const int64_t* __restrict__ a_rowptr,
-    const int64_t* __restrict__ a_col,
-    scalar_t* __restrict__ a_value,
-    int64_t* __restrict__ b_rowptr,
-    int64_t* __restrict__ b_col,
-    scalar_t* __restrict__ b_value,
-    scalar_t* __restrict__ grad_out,
-    scalar_t* __restrict__ distances,
-    scalar_t* __restrict__ grad,
-    int dim_a,
-    int dim_b,
-    int dim_c) {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (i < dim_a && j < dim_b){
-    const int start_i = a_rowptr[i];
-    const int end_i = a_rowptr[i+1];
-    const int start_j = b_rowptr[j];
-    const int end_j = b_rowptr[j+1];
-
-
-    scalar_t *b_value_remainder = new scalar_t[end_j-start_j];
-    cpy_array<scalar_t>(b_value, b_value_remainder, start_j, end_j);
-    int64_t *b_col_remainder = new int64_t[end_j-start_j];
-    cpy_array<int64_t>(b_col, b_col_remainder, start_j, end_j);
-
-    for (int ii = start_i; ii < end_i; ii ++){
-      int col_index_i = a_col[ii];
-      auto value_i = a_value[ii];
-      bool not_matched_i = true;
-      int counter = 0;
+    else if(start_i == end_i){
       for (int jj = start_j; jj < end_j; jj ++){
-        int col_index_j = b_col[jj];
         auto value_j = b_value[jj];
+        distance +=(value_j*value_j);
+      }
+    }
+    else{
+      int col_index_j = b_col[start_j];
+      auto value_j = b_value[start_j];
+      printf("loop from start_i: %d, to end_i: %d \n", start_i, end_i);
+      for (int ii = start_i; ii < end_i; ii ++){
+        int col_index_i = a_col[ii];
+        auto value_i = a_value[ii];
 
         if (col_index_i == col_index_j){
-          auto delta = (value_i - value_j);
-          if (distances[i*dim_b + j] != 0){
-            grad[col_index_i * dim_a * dim_b + i * dim_b + j] = (delta/distances[i*dim_b + j]) * grad_out[i * dim_b + j];
-          }
-          
-          not_matched_i = false;
-          b_value_remainder[counter] = 0.0;
+            auto t = (value_i - value_j);
+            distance += t*t;
+            start_j++;
+            if(start_j < end_j){
+              col_index_j = b_col[start_j];
+              value_j = b_value[start_j];  
+            }
+            printf("same: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);
         }
-        counter++;
+        else if(col_index_i< col_index_j){
+          distance +=(value_i*value_i);
+          printf("smaller: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);
+        }
+        else if(col_index_j < col_index_i){
+          distance +=(value_i*value_i);
+          if(start_j < end_j){
+            distance +=(value_j*value_j);
+            start_j++;
+            if(start_j < end_j){
+              col_index_j = b_col[start_j];
+              value_j = b_value[start_j];  
+            }
+          }
+          printf("larger: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);          
+        } 
       }
-      if(not_matched_i){
-        grad[col_index_i * dim_a * dim_b + i * dim_b + j] = (value_i/distances[i*dim_b + j]) * grad_out[i * dim_b + j];
+      if(start_j < end_j){
+        for(int jj=start_j; jj<end_j; jj++){
+          value_j = b_value[jj];
+          col_index_j = b_col[jj];
+          distance +=(value_j*value_j);
+          printf("rest: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, 0, col_index_j);
+        }
       }
     }
-    for (int jj = 0; jj < end_j- start_j; jj ++){
-      if (b_value_remainder !=0){
-      int64_t col_index = b_col_remainder[jj];
-      grad[col_index * dim_a * dim_b + i * dim_b + j] = ((-1.0*b_value_remainder[jj])/distances[i*dim_b + j]) * grad_out[i * dim_b + j];
-      }
-    }
+    distance = sqrt(distance);
+    printf("rest: distance: %f\n", distance);
+    output[i*dim_b + j] = distance;
   }
 }
 
 
-
-
-at::Tensor sparse_cdist_cuda(
+torch::Tensor sparse_cdist_cuda(
     torch::Tensor a_rowptr_data,
     torch::Tensor a_col_data,
     torch::Tensor a_value_data,
@@ -176,71 +140,4 @@ at::Tensor sparse_cdist_cuda(
   }));
 
   return output;
-}
-
-std::tuple<torch::Tensor, torch::Tensor> sparse_cdist_bw_cuda(
-    torch::Tensor a_rowptr_data,
-    torch::Tensor a_col_data,
-    torch::Tensor a_value_data,
-    torch::Tensor b_rowptr_data,
-    torch::Tensor b_col_data,
-    torch::Tensor b_value_data,
-    torch::Tensor grad_out,
-    torch::Tensor distance,
-    int dim_a,
-    int dim_b,
-    int dim_c
-    ) {
-
-  std::vector<int64_t> vec_a;
-  vec_a.push_back(dim_a);
-  vec_a.push_back(dim_b);
-  vec_a.push_back(dim_c);
-  torch::Tensor grad_a = torch::zeros(vec_a, a_value_data.options());
-  
-  dim3 threadsPerBlockA(32, 32);
-  dim3 numBlocksA(dim_a+1 / threadsPerBlockA.x, dim_b+1 / threadsPerBlockA.y);
-  AT_DISPATCH_FLOATING_TYPES(a_value_data.scalar_type(), "sparse_cdist_bw_cuda", ([&] {
-    sparse_cdist_bw_cuda_kernel<scalar_t><<<numBlocksA, threadsPerBlockA>>>(
-        a_rowptr_data.data_ptr<int64_t>(),
-        a_col_data.data_ptr<int64_t>(),
-        a_value_data.data_ptr<scalar_t>(),
-        b_rowptr_data.data_ptr<int64_t>(),
-        b_col_data.data_ptr<int64_t>(),
-        b_value_data.data_ptr<scalar_t>(),
-        grad_out.data_ptr<scalar_t>(),
-        distance.data_ptr<scalar_t>(),
-        grad_a.data_ptr<scalar_t>(),
-        dim_a,
-        dim_b,
-        dim_c);
-
-  }));
-
-  std::vector<int64_t> vec_b;
-  vec_b.push_back(dim_b);
-  vec_b.push_back(dim_a);
-  vec_b.push_back(dim_c);
-  torch::Tensor grad_b = torch::zeros(vec_b, a_value_data.options());
-
-  dim3 threadsPerBlockB(32, 32);
-  dim3 numBlocksB(dim_a+1 / threadsPerBlockB.x, dim_b+1 / threadsPerBlockB.y);
-  AT_DISPATCH_FLOATING_TYPES(a_value_data.scalar_type(), "sparse_cdist_bw_cuda", ([&] {
-    sparse_cdist_bw_cuda_kernel<scalar_t><<<numBlocksB, threadsPerBlockB>>>(
-        a_rowptr_data.data_ptr<int64_t>(),
-        a_col_data.data_ptr<int64_t>(),
-        a_value_data.data_ptr<scalar_t>(),
-        b_rowptr_data.data_ptr<int64_t>(),
-        b_col_data.data_ptr<int64_t>(),
-        b_value_data.data_ptr<scalar_t>(),
-        grad_out.data_ptr<scalar_t>(),
-        distance.data_ptr<scalar_t>(),
-        grad_b.data_ptr<scalar_t>(),
-        dim_b,
-        dim_a,
-        dim_c);
-
-  }));  
-
-  return std::make_tuple(grad_a, grad_b);
 }

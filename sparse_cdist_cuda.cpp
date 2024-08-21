@@ -70,12 +70,13 @@ void sparse_cdist_cpu(
           if(not_matched_i){
             distance +=(value_i*value_i);
           }
-        }
-        for (int jj = 0; jj < end_j- start_j; jj ++){
-          distance +=(b_value_remainder[jj]*b_value_remainder[jj]);
-        }
-        distance = sqrt(distance);
-        output[i*dim_b + j] = distance;
+      }
+      for (int jj = 0; jj < end_j- start_j; jj ++){
+        distance +=(b_value_remainder[jj]*b_value_remainder[jj]);
+      }
+      distance = sqrt(distance);
+      output[i*dim_b + j] = distance;
+      delete[] b_value_remainder;
       }
     } 
   }
