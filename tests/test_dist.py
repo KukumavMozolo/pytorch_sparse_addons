@@ -10,29 +10,29 @@ from time import sleep
 
 class CdistTest(unittest.TestCase):
     def test_cdist(self):
-        # simple = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0]], device=torch.device("cuda")))
-        # res = cdist(simple)
-        # target = torch.cdist(simple.to_dense(),simple.to_dense())
-        # self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))
+        simple = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0]], device=torch.device("cuda")))
+        res = cdist(simple)
+        target = torch.cdist(simple.to_dense(),simple.to_dense())
+        self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))
 
-        # simple2 = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0], [2.0,4.0,6.0]], device=torch.device("cuda")))
-        # res = cdist(simple, simple2)
-        # target = torch.cdist(simple.to_dense(),simple2.to_dense())
-        # self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))        
+        simple2 = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0], [2.0,4.0,6.0]], device=torch.device("cuda")))
+        res = cdist(simple, simple2)
+        target = torch.cdist(simple.to_dense(),simple2.to_dense())
+        self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))        
 
         simple3 = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0], [2.0,4.0,0.0]], device=torch.device("cuda")))
-        # res = cdist(simple, simple3)
-        # target = torch.cdist(simple.to_dense(),simple3.to_dense())
-        # self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))
+        res = cdist(simple, simple3)
+        target = torch.cdist(simple.to_dense(),simple3.to_dense())
+        self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))
 
-        # simple4 = SparseTensor.from_dense(torch.tensor([[2.0,0.0,0.0]], device=torch.device("cuda")))
-        # res = cdist(simple4, simple3)
-        # target = torch.cdist(simple4.to_dense(),simple3.to_dense())
-        # self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))     
+        simple4 = SparseTensor.from_dense(torch.tensor([[2.0,0.0,0.0]], device=torch.device("cuda")))
+        res = cdist(simple4, simple3)
+        target = torch.cdist(simple4.to_dense(),simple3.to_dense())
+        self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))     
 
-        # res = cdist(simple3, simple4)
-        # target = torch.cdist(simple3.to_dense(),simple4.to_dense())
-        # self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))             
+        res = cdist(simple3, simple4)
+        target = torch.cdist(simple3.to_dense(),simple4.to_dense())
+        self.assertTrue(np.array_equal(res.to_dense().cpu().numpy(), target.to_dense().cpu().numpy()))             
 
         x = SparseTensor.from_dense(torch.tensor([[1.0,2.0,3.0],[1.0,.0,.0],[.0,1.0,1.0]], device=torch.device("cuda")))
         res = cdist(x)
@@ -55,20 +55,6 @@ class CdistTest(unittest.TestCase):
 
         l = SparseTensor.from_dense(torch.tensor([[1,2,3],[1,0,0],[0,1,0],[0,1,2],[0,1,2]], device=torch.device("cuda")))
         self.assertRaises(RuntimeError,lambda: cdist(x,l))
-
-    
-
-
-
-        try:
-            for ii in range(1,1000):
-                i = SparseTensor.from_dense(torch.rand((ii,84), device=torch.device("cuda")))
-                j = SparseTensor.from_dense(torch.rand((ii,84), device=torch.device("cuda")))
-                print(cdist(i,j))
-
-        except Exception as e:
-            print(ii)
-            print(e)
 
 if __name__ == "__main__":
     unittest.main()

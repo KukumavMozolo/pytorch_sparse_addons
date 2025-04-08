@@ -57,50 +57,75 @@ __global__ void sparse_cdist_cuda_kernel(
     else{
       int col_index_j = b_col[start_j];
       auto value_j = b_value[start_j];
-      printf("loop from start_i: %d, to end_i: %d \n", start_i, end_i);
+      bool j_empty = false;
+      //printf("loop from start_i: %d, to end_i: %d \n", start_i, end_i);
       for (int ii = start_i; ii < end_i; ii ++){
         int col_index_i = a_col[ii];
         auto value_i = a_value[ii];
 
-        if (col_index_i == col_index_j){
+        if (col_index_i == col_index_j && !j_empty){
             auto t = (value_i - value_j);
+            //printf("t: %f value_i: %f, value_j: %f\n", t, value_i, value_j);
             distance += t*t;
             start_j++;
             if(start_j < end_j){
               col_index_j = b_col[start_j];
               value_j = b_value[start_j];  
             }
-            printf("same: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);
+            else{
+              j_empty = true;
+            }
+            //printf("same: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);
         }
         else if(col_index_i< col_index_j){
           distance +=(value_i*value_i);
-          printf("smaller: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);
+          //printf("smaller: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);
         }
-        else if(col_index_j < col_index_i){
-          distance +=(value_i*value_i);
-          if(start_j < end_j){
-            distance +=(value_j*value_j);
-            start_j++;
-            if(start_j < end_j){
-              col_index_j = b_col[start_j];
-              value_j = b_value[start_j];  
-            }
+        else{
+          while (col_index_j < col_index_i && !j_empty){
+              distance +=(value_j*value_j);
+              start_j++;
+              if(start_j < end_j){
+                col_index_j = b_col[start_j];
+                value_j = b_value[start_j];  
+              }else{
+                j_empty = true;
+              }
+            //printf("else larger: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);          
           }
-          printf("larger: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);          
-        } 
+          if (col_index_i == col_index_j && !j_empty){
+              auto t = (value_i - value_j);
+              //printf("t: %f value_i: %f, value_j: %f\n", t, value_i, value_j);
+              distance += t*t;
+              start_j++;
+              if(start_j < end_j){
+                col_index_j = b_col[start_j];
+                value_j = b_value[start_j];  
+              }
+              else{
+                j_empty = true;
+              }
+              //printf("else same: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);
+          }
+          else{
+            distance +=(value_i*value_i);
+            //printf("else smaller: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, col_index_i, col_index_j);
+          }
+        }
       }
-      if(start_j < end_j){
+      if(!j_empty){
         for(int jj=start_j; jj<end_j; jj++){
           value_j = b_value[jj];
           col_index_j = b_col[jj];
           distance +=(value_j*value_j);
-          printf("rest: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, 0, col_index_j);
+          //printf("rest: distance: %f,col_index_i: %d,col_index_j: %d \n", distance, 0, col_index_j);
         }
       }
+
+      distance = sqrt(distance);
+      //printf("rest: distance: %f\n", distance);
+      output[i*dim_b + j] = distance;
     }
-    distance = sqrt(distance);
-    printf("rest: distance: %f\n", distance);
-    output[i*dim_b + j] = distance;
   }
 }
 

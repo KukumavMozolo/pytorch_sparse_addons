@@ -16,5 +16,5 @@ result = cdist(x,y)
 ```
 
 ## Building
-Build for compute capability 8.0, 8.6, 8.9
+Build for compute capability 6.1, 7.0, ,7.5, 8.0, 8.6, 8.9
 to support your cards compute capability e.g. build with `TORCH_CUDA_ARCH_LIST="<compute_capability;other_compute_capability>" pdm build`
